@@ -1,34 +1,42 @@
 package com.cuibq.juc;
 
-import java.util.concurrent.locks.LockSupport;
-
 public class T_A1B2C4_wait_notify {
 
-	static Thread t1 = null;
-	static Thread t2 = null;
-	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws Throwable {
 
 		char[] c1 = "ABCDEFG".toCharArray();
 		char[] c2 = "1234567".toCharArray();
 
-		t1 = new Thread(() -> {
-			for (char c : c1) {
-				System.out.print(c);
-				LockSupport.unpark(t2);
-				LockSupport.park();
+		Object o = new Object();
+
+		new Thread(() -> {
+			synchronized (o) {
+				for (char c : c1) {
+					System.out.print(c);
+					try {
+						o.notify();
+						o.wait();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				o.notify();
 			}
-		}, "t1");
-		t2 = new Thread(() -> {
-			for (char c : c2) {
-				LockSupport.park();
-				System.out.print(c);
-				LockSupport.unpark(t1);
+		}, "t1").start();
+		new Thread(() -> {
+			synchronized (o) {
+				for (char c : c2) {
+					System.out.print(c);
+					try {
+						o.notify();
+						o.wait();
+					} catch (InterruptedException e) {
+						e.printStackTrace();
+					}
+				}
+				o.notify();
 			}
-		}, "t2");
-		
-		t1.start();
-		t2.start();
+		}, "t2").start();
 	}
 
 }
